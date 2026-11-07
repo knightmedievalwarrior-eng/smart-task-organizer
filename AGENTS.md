@@ -7,24 +7,17 @@
 >
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
-
-## What Lovable manages
-
-Rules outside this block are the project's own. Change the pieces below in
-Lovable, not by hand. With the [Lovable MCP](https://mcp.lovable.dev)
-connected, `send_message` asks Lovable to do it; otherwise ask the user to
-use the editor.
-
-- **Database.** Do not add or edit `supabase/migrations/` or `drizzle/`.
-  Ask Lovable to change the schema.
-- **Generated files.** Do not edit a file whose header says it is automatically
-  generated.
-- **AI gateway.** Keep model calls on Lovable's gateway, and keep
-  `LOVABLE_API_KEY` out of browser code.
-- **Connectors.** Lovable provides native connectors. `list_connectors` shows
-  which are enabled; `add_connector` only returns the dashboard link. When a
-  connector is enabled, calls go through the connector gateway and need
-  `LOVABLE_API_KEY`. When Lovable does not provide one, users can bring their
-  own key and store it in Secrets.
-- **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+# Architecture rules
+
+- All task/customer data lives client-side in `src/lib/session-store.ts` (localStorage, permanent, with a 30-day trash); the backend stores only accounts and credits (`user_profiles`) — privacy-first requirement.
+- Scheduled tasks run from `src/lib/scheduler.ts` only while the app is open, since data is local.
+- GitHub backup goes browser → user's repo via `src/lib/github-backup.ts`; the token stays in localStorage, never on our server.
+- Task types, steps, fields, validation and totals are declared in `src/lib/tasks/definitions.ts`; add new task types there so wizard, review and execution pick them up generically.
+- Command routing is local-first: `src/lib/intent.ts` decides command vs question; only questions go to `/api/chat` (streaming AI route in `src/server/ai/`).
+- Bot execution goes through `src/lib/runner.ts` (`startRun` callbacks); swap its internals for an n8n webhook/stream later without touching the UI.
+- Completing a run must call `finishTask`, which deletes the task data and records the history entry in one step.
+- AI chat replies render via Streamdown without the mermaid plugin; mermaid's graphlib/dagre chunks caused a blank screen in production builds.
+- Language (TH/EN) and colour theme are UI preferences in localStorage via `src/lib/i18n.ts` and `src/lib/theme.ts`; never introduce a second i18n or theming mechanism.
+- Credits (free daily + packs + Pro monthly) live in `src/lib/credits.ts`, deducted in `launchRun` and checked before a run starts. Special (paid) themes gate on `src/lib/plan.ts` (`isPro`); locked choices open the shared upgrade dialog through `src/lib/upgrade.ts` (UpgradeDialogHost is mounted once in `src/routes/__root.tsx`).
