@@ -14,13 +14,75 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      user_profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          free_day: string
+          free_used: number
+          id: string
+          is_pro: boolean
+          pack_credits: number
+          pro_month: string
+          pro_used: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          free_day?: string
+          free_used?: number
+          id: string
+          is_pro?: boolean
+          pack_credits?: number
+          pro_month?: string
+          pro_used?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          free_day?: string
+          free_used?: number
+          id?: string
+          is_pro?: boolean
+          pack_credits?: number
+          pro_month?: string
+          pro_used?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      my_credits: {
+        Args: never
+        Returns: {
+          free: number
+          is_pro: boolean
+          monthly: number
+          pack: number
+          total: number
+        }[]
+      }
+      spend_credits: {
+        Args: { _kind: string; _units?: number }
+        Returns: {
+          cost: number
+          free: number
+          is_pro: boolean
+          monthly: number
+          pack: number
+          total: number
+        }[]
+      }
+      task_credit_cost: {
+        Args: { _kind: string; _units: number }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never
