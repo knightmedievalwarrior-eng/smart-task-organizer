@@ -17,6 +17,7 @@ import {
 
 import { CommandBox } from "@/components/app/CommandBox";
 import { StepSegments } from "@/components/app/StepSegments";
+import { ScheduleButton } from "@/components/app/ScheduleButton";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useT } from "@/lib/i18n";
@@ -281,8 +282,9 @@ function PendingRow({ task: t, run }: { task: Task; run: LiveRun | undefined }) 
             </div>
           )}
         </div>
+        {!live && <ScheduleButton task={t} />}
         {!live && (
-          <Button variant="ghost" size="icon-sm" aria-label={tl("ลบงาน", "Delete task")} onClick={() => deleteTask(t.id)}>
+          <Button variant="ghost" size="icon-sm" aria-label={tl("ย้ายไปถังขยะ", "Move to trash")} onClick={() => deleteTask(t.id)}>
             <Trash2 />
           </Button>
         )}
