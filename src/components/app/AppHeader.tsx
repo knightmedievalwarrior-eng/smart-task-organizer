@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ShieldCheck, Trash2 } from "lucide-react";
+import { LogIn, LogOut, ShieldCheck, Trash, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import logo from "@/assets/logo-mark.png";
@@ -17,7 +17,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useT } from "@/lib/i18n";
+import { signOut, useUser } from "@/lib/auth";
 import { wipeAll } from "@/lib/session-store";
+
+import { BackupDialog } from "./BackupDialog";
 
 import { CreditBadge } from "./CreditBadge";
 import { LanguageToggle } from "./LanguageToggle";
@@ -27,6 +30,7 @@ import { ThemeSwitcher } from "./ThemeSwitcher";
 
 export function AppHeader() {
   const { t } = useT();
+  const user = useUser();
 
   return (
     <header className="sticky top-0 z-30 border-b border-border/70 bg-background/85 backdrop-blur-md">
@@ -47,6 +51,33 @@ export function AppHeader() {
           <RunIndicator />
           <CreditBadge />
           <SupabaseSettingsDialog />
+          <BackupDialog />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button asChild variant="ghost" size="icon-sm" aria-label={t("ถังขยะ", "Trash")}>
+                <Link to="/trash">
+                  <Trash />
+                </Link>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{t("ถังขยะ (30 วัน)", "Trash (30 days)")}</TooltipContent>
+          </Tooltip>
+          {user ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon-sm" aria-label={t("ออกจากระบบ", "Sign out")} onClick={() => void signOut()}>
+                  <LogOut />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{user.email} · {t("ออกจากระบบ", "Sign out")}</TooltipContent>
+            </Tooltip>
+          ) : (
+            <Button asChild variant="soft" size="sm">
+              <Link to="/auth">
+                <LogIn /> <span className="hidden sm:inline">{t("เข้าสู่ระบบ", "Sign in")}</span>
+              </Link>
+            </Button>
+          )}
           <Tooltip>
             <TooltipTrigger asChild>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1 text-xs text-muted-foreground">
@@ -57,8 +88,8 @@ export function AppHeader() {
             </TooltipTrigger>
             <TooltipContent className="max-w-64 text-xs leading-relaxed">
               {t(
-                "ไฟล์ Excel/CSV และข้อมูลลูกค้าทั้งหมดถูกเปิดและประมวลผลในเบราว์เซอร์ของคุณโดยตรง ไม่มีการอัปโหลดขึ้นเซิร์ฟเวอร์ของแอป (ถ้าเชื่อม Supabase ข้อมูลจะส่งตรงไปยังโปรเจกต์ของคุณ) และถูกลบเมื่อปิดแท็บหรืองานเสร็จ ประวัติเก็บเพียงสรุปที่ไม่ระบุตัวบุคคล",
-                "Excel/CSV files and customer data are opened and processed directly in your browser — nothing is uploaded to this app's server (with Supabase connected, data goes straight to your own project) and is deleted when the tab closes or the job finishes. History keeps only non-identifying summaries.",
+                "ไฟล์ Excel/CSV และข้อมูลลูกค้าทั้งหมดถูกเปิดและประมวลผลในเบราว์เซอร์ของคุณโดยตรง ไม่มีการอัปโหลดขึ้นเซิร์ฟเวอร์ของแอป (ถ้าเชื่อม Supabase ข้อมูลจะส่งตรงไปยังโปรเจกต์ของคุณ) เก็บถาวรในเครื่องนี้ (ลบแล้วอยู่ในถังขยะ 30 วัน) ประวัติเก็บเพียงสรุปที่ไม่ระบุตัวบุคคล",
+                "Excel/CSV files and customer data are opened and processed directly in your browser — nothing is uploaded to this app's server (with Supabase connected, data goes straight to your own project) and is kept on this device (deleted items stay in the trash for 30 days). History keeps only non-identifying summaries.",
               )}
             </TooltipContent>
           </Tooltip>
@@ -74,7 +105,7 @@ export function AppHeader() {
                 <AlertDialogTitle>{t("ล้างข้อมูลทั้งหมด?", "Wipe all data?")}</AlertDialogTitle>
                 <AlertDialogDescription>
                   {t(
-                    "งานค้างทั้งหมดและประวัติการใช้งานในเบราว์เซอร์นี้จะถูกลบถาวร ไม่สามารถกู้คืนได้",
+                    "งานค้าง ถังขยะ และประวัติการใช้งานในเบราว์เซอร์นี้จะถูกลบถาวร ไม่สามารถกู้คืนได้",
                     "All pending tasks and usage history in this browser will be permanently deleted. This cannot be undone.",
                   )}
                 </AlertDialogDescription>

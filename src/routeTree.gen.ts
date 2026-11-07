@@ -10,7 +10,9 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as DataRouteImport } from './routes/data'
+import { Route as TrashRouteImport } from './routes/trash'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as DoneEntryIdRouteImport } from './routes/done.$entryId'
 import { Route as ExecuteTaskIdRouteImport } from './routes/execute.$taskId'
@@ -22,9 +24,19 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DataRoute = DataRouteImport.update({
   id: '/data',
   path: '/data',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TrashRoute = TrashRouteImport.update({
+  id: '/trash',
+  path: '/trash',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiChatRoute = ApiChatRouteImport.update({
@@ -55,7 +67,9 @@ const WizardTaskIdRoute = WizardTaskIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/data': typeof DataRoute
+  '/trash': typeof TrashRoute
   '/api/chat': typeof ApiChatRoute
   '/done/$entryId': typeof DoneEntryIdRoute
   '/execute/$taskId': typeof ExecuteTaskIdRoute
@@ -64,7 +78,9 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/data': typeof DataRoute
+  '/trash': typeof TrashRoute
   '/api/chat': typeof ApiChatRoute
   '/done/$entryId': typeof DoneEntryIdRoute
   '/execute/$taskId': typeof ExecuteTaskIdRoute
@@ -74,7 +90,9 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/data': typeof DataRoute
+  '/trash': typeof TrashRoute
   '/api/chat': typeof ApiChatRoute
   '/done/$entryId': typeof DoneEntryIdRoute
   '/execute/$taskId': typeof ExecuteTaskIdRoute
@@ -85,7 +103,9 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/auth'
     | '/data'
+    | '/trash'
     | '/api/chat'
     | '/done/$entryId'
     | '/execute/$taskId'
@@ -94,7 +114,9 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/auth'
     | '/data'
+    | '/trash'
     | '/api/chat'
     | '/done/$entryId'
     | '/execute/$taskId'
@@ -103,7 +125,9 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/auth'
     | '/data'
+    | '/trash'
     | '/api/chat'
     | '/done/$entryId'
     | '/execute/$taskId'
@@ -113,7 +137,9 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthRoute: typeof AuthRoute
   DataRoute: typeof DataRoute
+  TrashRoute: typeof TrashRoute
   ApiChatRoute: typeof ApiChatRoute
   DoneEntryIdRoute: typeof DoneEntryIdRoute
   ExecuteTaskIdRoute: typeof ExecuteTaskIdRoute
@@ -130,11 +156,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/data': {
       id: '/data'
       path: '/data'
       fullPath: '/data'
       preLoaderRoute: typeof DataRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/trash': {
+      id: '/trash'
+      path: '/trash'
+      fullPath: '/trash'
+      preLoaderRoute: typeof TrashRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/chat': {
@@ -177,7 +217,9 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthRoute: AuthRoute,
   DataRoute: DataRoute,
+  TrashRoute: TrashRoute,
   ApiChatRoute: ApiChatRoute,
   DoneEntryIdRoute: DoneEntryIdRoute,
   ExecuteTaskIdRoute: ExecuteTaskIdRoute,

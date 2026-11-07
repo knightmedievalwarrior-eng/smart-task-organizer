@@ -22,7 +22,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { dropDataset, storeDataset } from "@/lib/data-cache";
+import { chargeTask } from "@/lib/credits";
 import { useT } from "@/lib/i18n";
+import { openUpgrade } from "@/lib/upgrade";
 import { useSupabaseConfig } from "@/lib/supabase-config";
 import { pingSupabase, uploadRows, type UploadProgress } from "@/lib/supabase-rest";
 import {
@@ -133,6 +135,13 @@ function DataStudio() {
     if (!check.ok) {
       setUpload(null);
       toast.error(t("เชื่อมต่อไม่สำเร็จ", "Connection failed"), { description: check.message });
+      return;
+    }
+    const charge = await chargeTask("excel", table.rows.length);
+    if (!charge.ok) {
+      setUpload(null);
+      toast.error(t("เครดิตไม่พอ", "Not enough credits"));
+      openUpgrade();
       return;
     }
     const result = await uploadRows(config, target, table.rows, setUpload);

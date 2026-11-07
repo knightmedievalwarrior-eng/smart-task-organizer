@@ -17,6 +17,10 @@ import { UpgradeDialogHost } from "@/components/app/UpgradeDialogHost";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { BOOT_SCRIPT } from "@/lib/theme";
+import { getUser, initAuth } from "@/lib/auth";
+import { refreshServerCredits } from "@/lib/credits";
+import { startAutoBackup } from "@/lib/github-backup";
+import { startScheduler } from "@/lib/scheduler";
 
 function NotFoundComponent() {
   return (
@@ -120,6 +124,12 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  useEffect(() => {
+    void initAuth(() => void refreshServerCredits(!!getUser()));
+    startScheduler();
+    startAutoBackup();
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

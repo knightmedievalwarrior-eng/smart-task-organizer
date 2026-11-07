@@ -21,7 +21,7 @@ export const Route = createFileRoute("/trash")({
 const DAY = 24 * 60 * 60 * 1000;
 
 function TrashPage() {
-  const { t, tx } = useT();
+  const { t, tr } = useT();
   const hydrated = useHydrated();
   const { trash } = useAppState();
 
@@ -48,7 +48,7 @@ function TrashPage() {
             return (
               <li key={task.id} className="flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3">
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{tx(TASKS[task.type].title)}</p>
+                  <p className="truncate text-sm font-medium">{tr(TASKS[task.type].title)}</p>
                   <p className="text-xs text-muted-foreground">
                     {t(`ลบเมื่อ ${new Date(deletedAt).toLocaleString()} · เหลือ ${left} วัน`, `Deleted ${new Date(deletedAt).toLocaleString()} · ${left} days left`)}
                   </p>
