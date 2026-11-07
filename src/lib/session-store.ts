@@ -1,9 +1,9 @@
 /**
  * Privacy-first client store.
  *
- * - Working data (drafts, customer details) lives in sessionStorage only:
- *   it survives a reload but is destroyed when the tab closes, and is
- *   deleted immediately when a mission finishes.
+ * - Working data (drafts, customer details) lives in localStorage on this
+ *   device permanently; deleted tasks go to a trash for 30 days, and a
+ *   finished mission's data is removed immediately.
  * - Usage history lives in localStorage and holds only non-personal
  *   summaries (task type, reference no., counts, amounts, timestamps).
  * Nothing is ever sent to or stored on a server.
