@@ -10,33 +10,115 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DataRouteImport } from './routes/data'
+import { Route as ApiChatRouteImport } from './routes/api/chat'
+import { Route as DoneEntryIdRouteImport } from './routes/done.$entryId'
+import { Route as ExecuteTaskIdRouteImport } from './routes/execute.$taskId'
+import { Route as ReviewTaskIdRouteImport } from './routes/review.$taskId'
+import { Route as WizardTaskIdRouteImport } from './routes/wizard.$taskId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DataRoute = DataRouteImport.update({
+  id: '/data',
+  path: '/data',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiChatRoute = ApiChatRouteImport.update({
+  id: '/api/chat',
+  path: '/api/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DoneEntryIdRoute = DoneEntryIdRouteImport.update({
+  id: '/done/$entryId',
+  path: '/done/$entryId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExecuteTaskIdRoute = ExecuteTaskIdRouteImport.update({
+  id: '/execute/$taskId',
+  path: '/execute/$taskId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReviewTaskIdRoute = ReviewTaskIdRouteImport.update({
+  id: '/review/$taskId',
+  path: '/review/$taskId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WizardTaskIdRoute = WizardTaskIdRouteImport.update({
+  id: '/wizard/$taskId',
+  path: '/wizard/$taskId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/data': typeof DataRoute
+  '/api/chat': typeof ApiChatRoute
+  '/done/$entryId': typeof DoneEntryIdRoute
+  '/execute/$taskId': typeof ExecuteTaskIdRoute
+  '/review/$taskId': typeof ReviewTaskIdRoute
+  '/wizard/$taskId': typeof WizardTaskIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/data': typeof DataRoute
+  '/api/chat': typeof ApiChatRoute
+  '/done/$entryId': typeof DoneEntryIdRoute
+  '/execute/$taskId': typeof ExecuteTaskIdRoute
+  '/review/$taskId': typeof ReviewTaskIdRoute
+  '/wizard/$taskId': typeof WizardTaskIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/data': typeof DataRoute
+  '/api/chat': typeof ApiChatRoute
+  '/done/$entryId': typeof DoneEntryIdRoute
+  '/execute/$taskId': typeof ExecuteTaskIdRoute
+  '/review/$taskId': typeof ReviewTaskIdRoute
+  '/wizard/$taskId': typeof WizardTaskIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/data'
+    | '/api/chat'
+    | '/done/$entryId'
+    | '/execute/$taskId'
+    | '/review/$taskId'
+    | '/wizard/$taskId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/data'
+    | '/api/chat'
+    | '/done/$entryId'
+    | '/execute/$taskId'
+    | '/review/$taskId'
+    | '/wizard/$taskId'
+  id:
+    | '__root__'
+    | '/'
+    | '/data'
+    | '/api/chat'
+    | '/done/$entryId'
+    | '/execute/$taskId'
+    | '/review/$taskId'
+    | '/wizard/$taskId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DataRoute: typeof DataRoute
+  ApiChatRoute: typeof ApiChatRoute
+  DoneEntryIdRoute: typeof DoneEntryIdRoute
+  ExecuteTaskIdRoute: typeof ExecuteTaskIdRoute
+  ReviewTaskIdRoute: typeof ReviewTaskIdRoute
+  WizardTaskIdRoute: typeof WizardTaskIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +130,59 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/data': {
+      id: '/data'
+      path: '/data'
+      fullPath: '/data'
+      preLoaderRoute: typeof DataRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/chat': {
+      id: '/api/chat'
+      path: '/api/chat'
+      fullPath: '/api/chat'
+      preLoaderRoute: typeof ApiChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/done/$entryId': {
+      id: '/done/$entryId'
+      path: '/done/$entryId'
+      fullPath: '/done/$entryId'
+      preLoaderRoute: typeof DoneEntryIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/execute/$taskId': {
+      id: '/execute/$taskId'
+      path: '/execute/$taskId'
+      fullPath: '/execute/$taskId'
+      preLoaderRoute: typeof ExecuteTaskIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/review/$taskId': {
+      id: '/review/$taskId'
+      path: '/review/$taskId'
+      fullPath: '/review/$taskId'
+      preLoaderRoute: typeof ReviewTaskIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/wizard/$taskId': {
+      id: '/wizard/$taskId'
+      path: '/wizard/$taskId'
+      fullPath: '/wizard/$taskId'
+      preLoaderRoute: typeof WizardTaskIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DataRoute: DataRoute,
+  ApiChatRoute: ApiChatRoute,
+  DoneEntryIdRoute: DoneEntryIdRoute,
+  ExecuteTaskIdRoute: ExecuteTaskIdRoute,
+  ReviewTaskIdRoute: ReviewTaskIdRoute,
+  WizardTaskIdRoute: WizardTaskIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
