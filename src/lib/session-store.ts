@@ -32,6 +32,8 @@ export interface Task {
   stepIndex: number;
   data: TaskData;
   lastRun?: LastRun | undefined;
+  /** When set, the app starts this task automatically at this time (while the app is open). */
+  scheduledAt?: number | undefined;
   createdAt: number;
   updatedAt: number;
 }
@@ -54,16 +56,27 @@ export interface HistoryEntry {
   mode?: "n8n" | "simulate";
 }
 
+export interface TrashItem {
+  task: Task;
+  deletedAt: number;
+}
+
 export interface AppState {
   tasks: Task[];
   history: HistoryEntry[];
+  trash: TrashItem[];
 }
 
-export const SESSION_KEY = "gtr.session.v1";
+export const TRASH_DAYS = 30;
+const TRASH_MS = TRASH_DAYS * 24 * 60 * 60 * 1000;
+
+export const SESSION_KEY = "gtr.tasks.v2";
+const LEGACY_SESSION_KEY = "gtr.session.v1";
+export const TRASH_KEY = "gtr.trash.v1";
 export const HISTORY_KEY = "gtr.history.v1";
 const HISTORY_LIMIT = 50;
 
-const EMPTY: AppState = { tasks: [], history: [] };
+const EMPTY: AppState = { tasks: [], history: [], trash: [] };
 
 let state: AppState = EMPTY;
 let loaded = false;
@@ -81,18 +94,30 @@ function safeParse<T>(raw: string | null, fallback: T): T {
 function load() {
   if (loaded || typeof window === "undefined") return;
   loaded = true;
-  const tasks = safeParse<Task[]>(window.sessionStorage.getItem(SESSION_KEY), []);
+  // Tasks are now kept permanently in this browser (localStorage).
+  let tasks = safeParse<Task[] | null>(window.localStorage.getItem(SESSION_KEY), null);
+  if (!tasks) tasks = safeParse<Task[]>(window.sessionStorage.getItem(LEGACY_SESSION_KEY), []);
   const history = safeParse<HistoryEntry[]>(window.localStorage.getItem(HISTORY_KEY), []);
+  const trash = safeParse<TrashItem[]>(window.localStorage.getItem(TRASH_KEY), []);
   state = {
     tasks: Array.isArray(tasks) ? tasks.filter((t) => t && t.type in TASKS) : [],
     history: Array.isArray(history) ? history : [],
+    trash: purgeExpired(Array.isArray(trash) ? trash : [], Date.now()),
   };
+  window.sessionStorage.removeItem(LEGACY_SESSION_KEY);
+  persist();
+}
+
+/** Drops trash items older than TRASH_DAYS. */
+export function purgeExpired(trash: TrashItem[], now: number): TrashItem[] {
+  return trash.filter((i) => i && i.task && now - i.deletedAt < TRASH_MS);
 }
 
 function persist() {
   if (typeof window === "undefined") return;
-  window.sessionStorage.setItem(SESSION_KEY, JSON.stringify(state.tasks));
+  window.localStorage.setItem(SESSION_KEY, JSON.stringify(state.tasks));
   window.localStorage.setItem(HISTORY_KEY, JSON.stringify(state.history));
+  window.localStorage.setItem(TRASH_KEY, JSON.stringify(state.trash));
 }
 
 function setState(next: AppState) {
@@ -158,9 +183,55 @@ export function updateTask(id: string, patch: Partial<Omit<Task, "id" | "type" |
   });
 }
 
+/** Moves a task to the trash (kept for TRASH_DAYS days). */
 export function deleteTask(id: string) {
   const s = getState();
-  setState({ ...s, tasks: s.tasks.filter((t) => t.id !== id) });
+  const task = s.tasks.find((t) => t.id === id);
+  if (!task) return;
+  setState({
+    ...s,
+    tasks: s.tasks.filter((t) => t.id !== id),
+    trash: [{ task: { ...task, scheduledAt: undefined }, deletedAt: Date.now() }, ...purgeExpired(s.trash, Date.now())],
+  });
+}
+
+export function restoreTask(id: string) {
+  const s = getState();
+  const item = s.trash.find((i) => i.task.id === id);
+  if (!item) return;
+  setState({ ...s, tasks: [item.task, ...s.tasks], trash: s.trash.filter((i) => i.task.id !== id) });
+}
+
+export function deleteForever(id: string) {
+  const s = getState();
+  setState({ ...s, trash: s.trash.filter((i) => i.task.id !== id) });
+}
+
+export function emptyTrash() {
+  setState({ ...getState(), trash: [] });
+}
+
+export function setSchedule(id: string, at: number | undefined) {
+  updateTask(id, { scheduledAt: at });
+}
+
+/** Full snapshot for backups. */
+export function exportBackup() {
+  const s = getState();
+  return { app: "guided-task-runner", version: 1, exportedAt: new Date().toISOString(), ...s };
+}
+
+/** Replaces local data with a backup snapshot. */
+export function importBackup(raw: unknown): boolean {
+  if (!raw || typeof raw !== "object") return false;
+  const b = raw as Partial<AppState>;
+  if (!Array.isArray(b.tasks) || !Array.isArray(b.history)) return false;
+  setState({
+    tasks: b.tasks.filter((t) => t && t.type in TASKS),
+    history: b.history,
+    trash: purgeExpired(Array.isArray(b.trash) ? b.trash : [], Date.now()),
+  });
+  return true;
 }
 
 function makeRef(prefix: string, at: number) {
@@ -198,6 +269,7 @@ export function finishTask(
     ...extra,
   };
   setState({
+    ...s,
     tasks: status === "success" ? s.tasks.filter((t) => t.id !== id) : s.tasks,
     history: [entry, ...s.history].slice(0, HISTORY_LIMIT),
   });
@@ -209,7 +281,7 @@ export function clearHistory() {
 }
 
 export function wipeAll() {
-  setState({ tasks: [], history: [] });
+  setState({ tasks: [], history: [], trash: [] });
 }
 
 /** Test helper: forget the in-memory cache so storage is re-read. */
