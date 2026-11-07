@@ -36,8 +36,8 @@ export function MissingTask() {
       <h1 className="mt-5 text-xl font-semibold">{t("ไม่พบงานนี้", "Task not found")}</h1>
       <p className="mt-2 text-sm text-muted-foreground">
         {t(
-          "งานอาจเสร็จสิ้นไปแล้ว หรือข้อมูลถูกลบเมื่อปิดแท็บ เพื่อความเป็นส่วนตัวของลูกค้า",
-          "It may have finished already, or its data was deleted when a tab closed — to protect customer privacy",
+          "งานอาจเสร็จสิ้นไปแล้ว หรือถูกย้ายไปถังขยะ (กู้คืนได้ภายใน 30 วัน)",
+          "It may have finished already, or was moved to the trash (restorable for 30 days)",
         )}
       </p>
       <Button asChild className="mt-6">

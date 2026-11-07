@@ -209,8 +209,8 @@ function PendingTasks() {
             icon={Inbox}
             title={t("ไม่มีงานค้าง", "Nothing pending")}
             body={t(
-              "งานที่เริ่มแล้วแต่ยังไม่ส่งจะแสดงที่นี่ และถูกลบอัตโนมัติเมื่อปิดแท็บ",
-              "Tasks you've started but not sent show up here, and are deleted automatically when you close the tab",
+              "งานที่เริ่มแล้วแต่ยังไม่ส่งจะแสดงที่นี่ และเก็บไว้ในเครื่องนี้ถาวร ตั้งเวลาให้เริ่มเองได้",
+              "Tasks you've started but not sent show up here and are kept on this device — you can schedule them too",
             )}
           />
         ) : (
