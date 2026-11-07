@@ -18,9 +18,9 @@ beforeEach(() => {
 });
 
 describe("privacy-first storage", () => {
-  it("keeps working data in sessionStorage only (destroyed when the tab closes)", () => {
+  it("keeps working data permanently in localStorage (survives closing the tab)", () => {
     const t = createTask("customer", { name: "สมชาย ใจดี" });
-    expect(window.sessionStorage.getItem(SESSION_KEY)).toContain("สมชาย ใจดี");
+    expect(window.localStorage.getItem(SESSION_KEY)).toContain("สมชาย ใจดี");
     expect(window.localStorage.getItem(HISTORY_KEY) ?? "").not.toContain("สมชาย");
     expect(getState().tasks[0]?.id).toBe(t.id);
   });
@@ -31,7 +31,7 @@ describe("privacy-first storage", () => {
     const entry = finishTask(t.id, "success", Date.now() - 3000, 4);
 
     expect(getState().tasks).toHaveLength(0);
-    expect(window.sessionStorage.getItem(SESSION_KEY)).not.toContain("สมชาย");
+    expect(window.localStorage.getItem(SESSION_KEY)).not.toContain("สมชาย");
     expect(getState().history).toHaveLength(1);
     expect(entry?.ref).toMatch(/^CU-\d{8}-\d{4}$/);
   });
