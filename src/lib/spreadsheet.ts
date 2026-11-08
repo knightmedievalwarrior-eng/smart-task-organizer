@@ -27,25 +27,42 @@ export function isAcceptedFile(file: { name: string }): boolean {
   return ACCEPTED_EXTENSIONS.some((ext) => name.endsWith(ext));
 }
 
+async function readFileArrayBuffer(file: File): Promise<ArrayBuffer> {
+  if (typeof file.arrayBuffer === "function") return file.arrayBuffer();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(reader.error ?? new Error("Unable to read spreadsheet file"));
+    reader.onload = () => {
+      if (reader.result instanceof ArrayBuffer) resolve(reader.result);
+      else reject(new Error("Unable to read spreadsheet file as binary data"));
+    };
+    reader.readAsArrayBuffer(file);
+  });
+}
+
 /** Parse a workbook into one SheetTable per sheet. Runs fully client-side. */
 export async function parseSpreadsheetFile(file: File): Promise<SheetTable[]> {
-  const buf = await file.arrayBuffer();
+  const buf = await readFileArrayBuffer(file);
   const wb = XLSX.read(buf, { type: "array", cellDates: true });
   return wb.SheetNames.flatMap((name): SheetTable[] => {
     const sheet = wb.Sheets[name];
     if (!sheet) return [];
-    const matrix = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, blankrows: false, defval: "" });
+    const matrix = XLSX.utils.sheet_to_json<unknown[]>(sheet, {
+      header: 1,
+      blankrows: true,
+      defval: "",
+    });
     const headerRow = (matrix.shift() ?? []).map((c) => String(c ?? "").trim());
     const columns = headerRow.map((h, i) => (h ? h : `col${i + 1}`));
-    const rows = matrix
-      .filter((r) => r.some((c) => String(c ?? "").trim() !== ""))
-      .map((r) => {
-        const row: Record<string, string> = {};
-        columns.forEach((col, i) => {
-          row[col] = r[i] === undefined || r[i] === null ? "" : String(r[i]);
-        });
-        return row;
+    const rows = matrix.map((r) => {
+      const row: Record<string, string> = {};
+      columns.forEach((col, i) => {
+        row[col] = r[i] === undefined || r[i] === null ? "" : String(r[i]);
       });
+      return row;
+    });
+    while (rows.length && Object.values(rows.at(-1) ?? {}).every((value) => !value.trim()))
+      rows.pop();
     return [
       {
         name,
@@ -67,7 +84,8 @@ export function trimWhitespace(table: SheetTable): SheetTable {
     columns: table.columns.map((c) => c.trim()),
     rows: table.rows.map((row) => {
       const next: Record<string, string> = {};
-      for (const [k, v] of Object.entries(row)) next[k.trim()] = typeof v === "string" ? v.trim() : v;
+      for (const [k, v] of Object.entries(row))
+        next[k.trim()] = typeof v === "string" ? v.trim() : v;
       return next;
     }),
   };
@@ -79,7 +97,9 @@ export function dropEmptyRows(table: SheetTable): { table: SheetTable; removed: 
 }
 
 export function dropEmptyColumns(table: SheetTable): { table: SheetTable; removed: number } {
-  const keep = table.columns.filter((c) => table.rows.some((r) => String(r[c] ?? "").trim() !== ""));
+  const keep = table.columns.filter((c) =>
+    table.rows.some((r) => String(r[c] ?? "").trim() !== ""),
+  );
   const removed = table.columns.length - keep.length;
   const rows = table.rows.map((r) => {
     const next: Record<string, string> = {};
@@ -125,10 +145,11 @@ export interface TableStats {
 export function tableStats(table: SheetTable): TableStats {
   const keys = new Set<string>();
   let emptyCells = 0;
+  let duplicates = 0;
   let bytes = 2; // JSON array brackets
   for (const r of table.rows) {
     const key = JSON.stringify(table.columns.map((c) => r[c] ?? ""));
-    if (keys.has(key)) keys.add("__dup__" + key);
+    if (keys.has(key)) duplicates += 1;
     else keys.add(key);
     for (const c of table.columns) {
       const v = String(r[c] ?? "");
@@ -136,8 +157,6 @@ export function tableStats(table: SheetTable): TableStats {
       bytes += c.length + v.length + 6;
     }
   }
-  let duplicates = 0;
-  for (const k of keys) if (k.startsWith("__dup__")) duplicates += 1;
   return {
     rows: table.rows.length,
     columns: table.columns.length,

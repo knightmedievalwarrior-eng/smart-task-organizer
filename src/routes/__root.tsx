@@ -19,7 +19,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { BOOT_SCRIPT } from "@/lib/theme";
 import { getUser, initAuth } from "@/lib/auth";
 import { refreshServerCredits } from "@/lib/credits";
-import { startAutoBackup } from "@/lib/github-backup";
 import { startScheduler } from "@/lib/scheduler";
 
 function NotFoundComponent() {
@@ -54,7 +53,9 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
   return (
     <div className="flex min-h-[70vh] items-center justify-center px-4">
       <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">หน้านี้โหลดไม่สำเร็จ</h1>
+        <h1 className="text-xl font-semibold tracking-tight text-foreground">
+          หน้านี้โหลดไม่สำเร็จ
+        </h1>
         <p className="mt-2 text-sm text-muted-foreground">
           เกิดข้อผิดพลาดบางอย่าง ลองรีเฟรชหรือกลับไปหน้าแรก
         </p>
@@ -128,7 +129,6 @@ function RootComponent() {
   useEffect(() => {
     void initAuth(() => void refreshServerCredits(!!getUser()));
     startScheduler();
-    startAutoBackup();
   }, []);
 
   return (

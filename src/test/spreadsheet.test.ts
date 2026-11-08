@@ -1,7 +1,13 @@
 // @ts-nocheck -- test fixtures index arrays freely
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { __resetDatasetCacheForTests, cachedSample, cachedTables, dropDataset, storeDataset } from "@/lib/data-cache";
+import {
+  __resetDatasetCacheForTests,
+  cachedSample,
+  cachedTables,
+  dropDataset,
+  storeDataset,
+} from "@/lib/data-cache";
 import {
   buildAiSample,
   chunkRows,
@@ -14,7 +20,12 @@ import {
   tableStats,
   trimWhitespace,
 } from "@/lib/spreadsheet";
-import { __resetSupabaseConfigForTests, getSupabaseConfig, saveSupabaseConfig, validateSupabaseConfig } from "@/lib/supabase-config";
+import {
+  __resetSupabaseConfigForTests,
+  getSupabaseConfig,
+  saveSupabaseConfig,
+  validateSupabaseConfig,
+} from "@/lib/supabase-config";
 import { restUrl } from "@/lib/supabase-rest";
 import { CHUNK_BYTES, CHUNK_ROWS } from "@/lib/spreadsheet";
 
@@ -76,8 +87,9 @@ describe("cleaning", () => {
 
   it("counts duplicates and empty cells in stats", async () => {
     const parsed = await parseSpreadsheetFile(makeFile("a.csv", CSV));
-    const stats = tableStats(parsed[0]);
-    expect(stats.rows).toBe(4);
+    const source = parsed[0];
+    const stats = tableStats({ ...source, rows: [...source.rows, { ...source.rows[0] }] });
+    expect(stats.rows).toBe(5);
     expect(stats.emptyCells).toBeGreaterThan(0);
     expect(stats.duplicates).toBe(1);
   });
@@ -97,7 +109,9 @@ describe("chunking (token/credit efficiency)", () => {
   });
 
   it("builds a minimal AI sample instead of the full dataset", async () => {
-    const parsed = await parseSpreadsheetFile(makeFile("big.csv", "a\n" + Array.from({ length: 500 }, (_, i) => i).join("\n")));
+    const parsed = await parseSpreadsheetFile(
+      makeFile("big.csv", "a\n" + Array.from({ length: 500 }, (_, i) => i).join("\n")),
+    );
     const sample = buildAiSample(parsed[0], 5);
     expect(sample.rowCount).toBe(500);
     expect(sample.sample).toHaveLength(5);
@@ -129,14 +143,18 @@ describe("supabase config (kept in this browser only)", () => {
   });
 
   it("requires https and an api key", () => {
-    expect(validateSupabaseConfig({ url: "abc", apiKey: "k" })).toMatch(/https/);
+    expect(validateSupabaseConfig({ url: "abc", apiKey: "k" })).toMatch(/https/i);
     expect(validateSupabaseConfig({ url: "https://x.supabase.co", apiKey: "" })).toBeTruthy();
     expect(validateSupabaseConfig({ url: "https://x.supabase.co", apiKey: "k" })).toBeNull();
   });
 
   it("saves and clears config without exposing it anywhere else", () => {
     saveSupabaseConfig({ url: "https://x.supabase.co/", apiKey: "k", table: "records" });
-    expect(getSupabaseConfig()).toEqual({ url: "https://x.supabase.co", apiKey: "k", table: "records" });
+    expect(getSupabaseConfig()).toEqual({
+      url: "https://x.supabase.co",
+      apiKey: "k",
+      table: "records",
+    });
     saveSupabaseConfig({ url: "", apiKey: "", table: "" });
     expect(getSupabaseConfig()).toEqual({ url: "", apiKey: "", table: "" });
   });

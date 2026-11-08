@@ -1,5 +1,17 @@
 import { Link, Navigate, createFileRoute, useNavigate } from "@tanstack/react-router";
-import { AlertTriangle, Check, Loader2, Pause, Pencil, Play, RotateCcw, Square, Terminal, Webhook, X } from "lucide-react";
+import {
+  AlertTriangle,
+  Check,
+  Loader2,
+  Pause,
+  Pencil,
+  Play,
+  RotateCcw,
+  Square,
+  Terminal,
+  Webhook,
+  X,
+} from "lucide-react";
 import { useEffect, useRef } from "react";
 
 import { N8nSettingsDialog } from "@/components/app/N8nSettingsDialog";
@@ -25,7 +37,10 @@ export const Route = createFileRoute("/execute/$taskId")({
   head: () => ({
     meta: [
       { title: "Real-Time Execution — บอทกำลังทำงาน" },
-      { name: "description", content: "ติดตามสถานะบอท n8n แบบเรียลไทม์ พร้อม Progress และ Log ทีละขั้น" },
+      {
+        name: "description",
+        content: "ติดตามสถานะบอท n8n แบบเรียลไทม์ พร้อม Progress และ Log ทีละขั้น",
+      },
       { property: "og:title", content: "Real-Time Execution — บอทกำลังทำงาน" },
       { property: "og:description", content: "Progress bar และ Log การทำงานทีละขั้นจาก n8n" },
       { property: "og:type", content: "website" },
@@ -111,11 +126,15 @@ function Execution({ run }: { run: LiveRun }) {
     void navigate({ to: "/review/$taskId", params: { taskId: run.taskId } });
   };
 
-  const active = phase === "running" || phase === "paused";
+  const active = phase === "authorizing" || phase === "running" || phase === "paused";
   const currentLabel = pipeline[progress.current] ?? "";
   const failedLabel = run.failure ? (pipeline[run.failure.index] ?? "") : "";
   const headline =
-    phase === "paused" ? `${t("หยุดชั่วคราว", "Paused")} (${progress.current + 1}/${total})` : statusLabel(progress, lang);
+    phase === "authorizing"
+      ? t("กำลังตรวจสอบเครดิตก่อนเริ่มงาน…", "Verifying credits before starting…")
+      : phase === "paused"
+        ? `${t("หยุดชั่วคราว", "Paused")} (${progress.current + 1}/${total})`
+        : statusLabel(progress, lang);
 
   return (
     <div className="mx-auto max-w-5xl px-4 pb-24 pt-8 sm:px-6 sm:pt-12">
@@ -125,7 +144,7 @@ function Execution({ run }: { run: LiveRun }) {
             <span
               className={cn(
                 "inline-block size-1.5 rounded-full",
-                phase === "running" && "animate-pulse-dot bg-signal",
+                (phase === "running" || phase === "authorizing") && "animate-pulse-dot bg-signal",
                 phase === "paused" && "bg-warning",
                 phase === "done" && "bg-success",
                 phase === "error" && "bg-destructive",
@@ -134,15 +153,20 @@ function Execution({ run }: { run: LiveRun }) {
             Real-Time Execution · {run.mode === "n8n" ? "n8n" : t("โหมดจำลอง", "demo mode")}
           </p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight">
-            {phase === "error"
-              ? t(`${def.title.th}ไม่สำเร็จ`, `${def.title.en} failed`)
-              : t(`บอทกำลัง${def.title.th}`, `Bot is working: ${def.title.en}`)}
+            {phase === "authorizing"
+              ? t("กำลังตรวจสอบเครดิต…", "Verifying credits…")
+              : phase === "error"
+                ? t(`${def.title.th}ไม่สำเร็จ`, `${def.title.en} failed`)
+                : t(`บอทกำลัง${def.title.th}`, `Bot is working: ${def.title.en}`)}
           </h1>
         </div>
         {active && (
           <div className="flex gap-2">
             {run.canPause && (
-              <Button variant="outline" onClick={() => (phase === "paused" ? resumeRun(run.taskId) : pauseRun(run.taskId))}>
+              <Button
+                variant="outline"
+                onClick={() => (phase === "paused" ? resumeRun(run.taskId) : pauseRun(run.taskId))}
+              >
                 {phase === "paused" ? (
                   <>
                     <Play /> {t("ทำต่อ", "Resume")}
@@ -154,7 +178,7 @@ function Execution({ run }: { run: LiveRun }) {
                 )}
               </Button>
             )}
-            <Button variant="ghost" onClick={cancel}>
+            <Button variant="ghost" disabled={phase === "authorizing"} onClick={cancel}>
               <Square /> {t("ยกเลิก", "Cancel")}
             </Button>
           </div>
@@ -173,10 +197,16 @@ function Execution({ run }: { run: LiveRun }) {
             </span>
             <div className="min-w-0 flex-1">
               <p className="font-semibold text-destructive">
-                {t("ขัดข้องที่ขั้นตอน", "Failed at step")} {run.failure.index + 1}/{total}: {failedLabel}
+                {t("ขัดข้องที่ขั้นตอน", "Failed at step")} {run.failure.index + 1}/{total}:{" "}
+                {failedLabel}
               </p>
               <p className="mt-1 break-words text-sm text-foreground/80">{run.failure.message}</p>
-              <p className="mt-2 text-xs text-muted-foreground">{t("ข้อมูลงานยังอยู่ในงานค้าง แก้ไขหรือส่งใหม่ได้", "The task is still in Pending — you can edit or resend it")}</p>
+              <p className="mt-2 text-xs text-muted-foreground">
+                {t(
+                  "ข้อมูลงานยังอยู่ในงานค้าง แก้ไขหรือส่งใหม่ได้",
+                  "The task is still in Pending — you can edit or resend it",
+                )}
+              </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <Button size="sm" variant="destructive" onClick={retry}>
                   <RotateCcw /> {t("ลองส่งใหม่", "Try again")}
@@ -201,9 +231,15 @@ function Execution({ run }: { run: LiveRun }) {
       <div className="surface mt-6 p-5 sm:p-7">
         <div className="flex items-baseline justify-between gap-4">
           <div className="min-w-0" aria-live="polite">
-            <p className={cn("text-base font-semibold", phase === "error" && "text-destructive")}>{headline}</p>
+            <p className={cn("text-base font-semibold", phase === "error" && "text-destructive")}>
+              {headline}
+            </p>
             <p className="mt-0.5 truncate text-sm text-muted-foreground">
-              {phase === "done" ? t("ทุกขั้นตอนเสร็จแล้ว", "All steps done") : phase === "error" ? failedLabel : currentLabel}
+              {phase === "done"
+                ? t("ทุกขั้นตอนเสร็จแล้ว", "All steps done")
+                : phase === "error"
+                  ? failedLabel
+                  : currentLabel}
             </p>
           </div>
           <p className="font-mono text-4xl font-semibold tabular-nums tracking-tight sm:text-5xl">
@@ -224,7 +260,11 @@ function Execution({ run }: { run: LiveRun }) {
             const failed = i === failedIndex;
             const current = !done && !failed && i === progress.current && active;
             return (
-              <div key={label} className="relative flex-1 overflow-hidden rounded-full bg-secondary" title={label}>
+              <div
+                key={label}
+                className="relative flex-1 overflow-hidden rounded-full bg-secondary"
+                title={label}
+              >
                 <div
                   className={cn(
                     "absolute inset-y-0 left-0 rounded-full transition-[width] duration-500 ease-out",
@@ -243,7 +283,9 @@ function Execution({ run }: { run: LiveRun }) {
           <span>
             {progress.completed}/{total} {t("ขั้นตอนเสร็จ", "steps done")}
           </span>
-          <span>{run.mode === "n8n" ? `→ ${run.target}` : t("ยังไม่ได้เชื่อม n8n", "n8n not connected")}</span>
+          <span>
+            {run.mode === "n8n" ? `→ ${run.target}` : t("ยังไม่ได้เชื่อม n8n", "n8n not connected")}
+          </span>
         </div>
       </div>
 
@@ -302,7 +344,9 @@ function Execution({ run }: { run: LiveRun }) {
             <span className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
               <Terminal className="size-3.5" /> execution.log
             </span>
-            <span className="font-mono text-[0.65rem] text-muted-foreground">{run.logs.length} lines</span>
+            <span className="font-mono text-[0.65rem] text-muted-foreground">
+              {run.logs.length} lines
+            </span>
           </div>
           <div
             ref={logBox}
@@ -310,9 +354,14 @@ function Execution({ run }: { run: LiveRun }) {
             aria-live="polite"
           >
             {run.logs.map((l) => (
-              <div key={l.id} className="flex gap-3 animate-in fade-in slide-in-from-bottom-1 duration-300">
+              <div
+                key={l.id}
+                className="flex gap-3 animate-in fade-in slide-in-from-bottom-1 duration-300"
+              >
                 <span className="shrink-0 text-muted-foreground">
-                  {new Date(l.at).toLocaleTimeString(lang === "en" ? "en-GB" : "th-TH", { hour12: false })}
+                  {new Date(l.at).toLocaleTimeString(lang === "en" ? "en-GB" : "th-TH", {
+                    hour12: false,
+                  })}
                 </span>
                 <span
                   className={cn(
@@ -327,18 +376,29 @@ function Execution({ run }: { run: LiveRun }) {
                 </span>
               </div>
             ))}
-            {phase === "running" && <span className="inline-block h-4 w-2 animate-pulse bg-foreground/60 align-middle" />}
+            {phase === "running" && (
+              <span className="inline-block h-4 w-2 animate-pulse bg-foreground/60 align-middle" />
+            )}
           </div>
           <div className="flex items-center justify-between gap-3 border-t border-border px-4 py-2 text-[0.7rem] text-muted-foreground">
             <span className="truncate">
               {run.mode === "n8n"
-                ? t(`ส่งตรงจากเบราว์เซอร์ไป n8n · ${run.target}`, `Sent straight from this browser to n8n · ${run.target}`)
-                : t("โหมดจำลอง · ตั้งค่า Webhook เพื่อส่งงานไป n8n จริง", "Demo mode · set up a webhook to send tasks to n8n")}
+                ? t(
+                    `ส่งตรงจากเบราว์เซอร์ไป n8n · ${run.target}`,
+                    `Sent straight from this browser to n8n · ${run.target}`,
+                  )
+                : t(
+                    "โหมดจำลอง · ตั้งค่า Webhook เพื่อส่งงานไป n8n จริง",
+                    "Demo mode · set up a webhook to send tasks to n8n",
+                  )}
             </span>
             {phase !== "error" && (
               <N8nSettingsDialog
                 trigger={
-                  <button type="button" className="shrink-0 underline-offset-2 hover:text-foreground hover:underline">
+                  <button
+                    type="button"
+                    className="shrink-0 underline-offset-2 hover:text-foreground hover:underline"
+                  >
                     {t("ตั้งค่า n8n", "n8n settings")}
                   </button>
                 }

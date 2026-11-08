@@ -25,7 +25,9 @@ function read(): SupabaseConfig {
   if (cache) return cache;
   if (typeof window === "undefined") return EMPTY;
   try {
-    const raw = JSON.parse(window.localStorage.getItem(SUPABASE_CONFIG_KEY) ?? "null") as Partial<SupabaseConfig> | null;
+    const raw = JSON.parse(
+      window.localStorage.getItem(SUPABASE_CONFIG_KEY) ?? "null",
+    ) as Partial<SupabaseConfig> | null;
     cache = {
       url: typeof raw?.url === "string" ? raw.url : "",
       apiKey: typeof raw?.apiKey === "string" ? raw.apiKey : "",
@@ -42,7 +44,11 @@ export function getSupabaseConfig(): SupabaseConfig {
 }
 
 export function saveSupabaseConfig(next: SupabaseConfig) {
-  cache = { url: next.url.trim().replace(/\/+$/, ""), apiKey: next.apiKey.trim(), table: next.table.trim() };
+  cache = {
+    url: next.url.trim().replace(/\/+$/, ""),
+    apiKey: next.apiKey.trim(),
+    table: next.table.trim(),
+  };
   if (typeof window !== "undefined") {
     const empty = !cache.url && !cache.apiKey;
     if (empty) window.localStorage.removeItem(SUPABASE_CONFIG_KEY);
@@ -72,12 +78,14 @@ export function validateSupabaseConfig(
   try {
     u = new URL(cfg.url.trim());
   } catch {
-    return m("รูปแบบ URL ไม่ถูกต้อง", "Invalid URL");
+    return m("URL ไม่ถูกต้อง — ต้องเป็น HTTPS URL", "Invalid URL — an HTTPS URL is required");
   }
-  if (u.protocol !== "https:")
-    return m("ต้องขึ้นต้นด้วย https://", "Must start with https://");
+  if (u.protocol !== "https:") return m("ต้องขึ้นต้นด้วย https://", "Must start with https://");
   if (!cfg.apiKey.trim())
-    return m("กรุณาใส่ API Key (Publishable / anon key)", "Enter the API key (publishable / anon key)");
+    return m(
+      "กรุณาใส่ API Key (Publishable / anon key)",
+      "Enter the API key (publishable / anon key)",
+    );
   return null;
 }
 

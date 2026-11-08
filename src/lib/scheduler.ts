@@ -22,9 +22,15 @@ export function tick(now = Date.now()) {
   for (const task of dueTasks(getState().tasks, now)) {
     const run = getRun(task.id);
     updateTask(task.id, { scheduledAt: undefined });
-    if (run && (run.phase === "running" || run.phase === "paused")) continue;
+    if (run && (run.phase === "authorizing" || run.phase === "running" || run.phase === "paused"))
+      continue;
     if (!canAfford(taskCost(task))) {
-      toast.error(tt("เครดิตไม่พอ งานที่ตั้งเวลาไว้ไม่ได้เริ่ม", "Not enough credits — a scheduled task didn't start"));
+      toast.error(
+        tt(
+          "เครดิตไม่พอ งานที่ตั้งเวลาไว้ไม่ได้เริ่ม",
+          "Not enough credits — a scheduled task didn't start",
+        ),
+      );
       continue;
     }
     launchRun(task);

@@ -52,12 +52,19 @@ describe("n8n status on Pending and Bot Log", () => {
     await settle(t.id);
 
     const task = getState().tasks.find((x) => x.id === t.id);
-    expect(task?.lastRun).toMatchObject({ status: "failed", failedStep: 1, message: "พบข้อมูลซ้ำ" });
+    expect(task?.lastRun).toMatchObject({
+      status: "failed",
+      failedStep: 1,
+      message: "พบข้อมูลซ้ำ",
+    });
     expect(getState().history[0]).toMatchObject({ status: "failed", failedStep: 1, mode: "n8n" });
   });
 
   it("removes the task from Pending and logs a success entry when n8n finishes", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => ndjson([{ status: "success" }])));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ndjson([{ status: "success" }])),
+    );
     const t = readyCustomer();
     launchRun(t);
     await settle(t.id);
@@ -66,11 +73,18 @@ describe("n8n status on Pending and Bot Log", () => {
     expect(getState().history[0]).toMatchObject({ status: "success", steps: 4, mode: "n8n" });
   });
 
-  it("shows the task as running while n8n is still working", () => {
-    vi.stubGlobal("fetch", vi.fn(() => new Promise<Response>(() => {})));
+  it("authorizes credits before starting n8n, then shows the task as running", async () => {
+    const fetchMock = vi.fn(() => new Promise<Response>(() => {}));
+    vi.stubGlobal("fetch", fetchMock);
     const t = readyCustomer();
     launchRun(t);
+
+    expect(getRun(t.id)?.phase).toBe("authorizing");
+    expect(fetchMock).not.toHaveBeenCalled();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
     expect(getRun(t.id)?.phase).toBe("running");
     expect(getState().tasks[0]?.lastRun?.status).toBe("running");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });

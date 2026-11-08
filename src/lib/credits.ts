@@ -28,7 +28,8 @@ export type CreditState = {
 };
 
 const pad = (n: number) => String(n).padStart(2, "0");
-export const dayKey = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+export const dayKey = (d: Date) =>
+  `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 export const monthKey = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
 
 /** Rolls the daily/monthly counters over when the date has changed. */
@@ -59,7 +60,12 @@ export function spend(s: CreditState, cost: number, pro: boolean): CreditState |
   left -= fromFree;
   const fromPro = Math.min(left, b.monthly);
   left -= fromPro;
-  return { ...s, freeUsed: s.freeUsed + fromFree, proUsed: s.proUsed + fromPro, pack: s.pack - left };
+  return {
+    ...s,
+    freeUsed: s.freeUsed + fromFree,
+    proUsed: s.proUsed + fromPro,
+    pack: s.pack - left,
+  };
 }
 
 export function emptyState(now: Date): CreditState {
@@ -104,8 +110,12 @@ type Balance = { free: number; monthly: number; pack: number; total: number };
 let server: (Balance & { pro: boolean }) | null = null;
 let signedIn = false;
 
-function setServer(row: { free: number; monthly: number; pack: number; total: number; is_pro: boolean } | null) {
-  server = row ? { free: row.free, monthly: row.monthly, pack: row.pack, total: row.total, pro: row.is_pro } : null;
+function setServer(
+  row: { free: number; monthly: number; pack: number; total: number; is_pro: boolean } | null,
+) {
+  server = row
+    ? { free: row.free, monthly: row.monthly, pack: row.pack, total: row.total, pro: row.is_pro }
+    : null;
   listeners.forEach((l) => l());
 }
 
@@ -120,7 +130,8 @@ export async function refreshServerCredits(isSignedIn: boolean) {
 }
 
 export function getBalance(): Balance {
-  if (server) return { free: server.free, monthly: server.monthly, pack: server.pack, total: server.total };
+  if (server)
+    return { free: server.free, monthly: server.monthly, pack: server.pack, total: server.total };
   return balance(load(), isPro());
 }
 
@@ -140,11 +151,19 @@ export function spendCredits(cost = RUN_COST): boolean {
  * Charges one task. Signed-in users are charged by the server (cost worked
  * out there from the task kind and size); guests locally.
  */
-export async function chargeTask(kind: CostKind, units = 0): Promise<{ ok: boolean; cost: number }> {
+export async function chargeTask(
+  kind: CostKind,
+  units = 0,
+  requestId?: string,
+): Promise<{ ok: boolean; cost: number }> {
   const cost = creditCost(kind, units);
   if (!signedIn) return { ok: spendCredits(cost), cost };
   const { supabase } = await import("@/integrations/supabase/client");
-  const { data, error } = await supabase.rpc("spend_credits", { _kind: kind, _units: units });
+  const { data, error } = await supabase.rpc("spend_credits", {
+    _kind: kind,
+    _units: units,
+    _request_id: requestId ?? null,
+  });
   if (error || !data?.[0]) {
     void refreshServerCredits(true);
     return { ok: false, cost };

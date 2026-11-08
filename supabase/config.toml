@@ -1,1 +1,28 @@
 project_id = "kmioaxnvjyqjmvrzdjjd"
+
+# JWTs for browser-facing functions are validated with Supabase Auth getUser()
+# in the handler. GitHub's OAuth callback is provider-redirected and uses a
+# one-time state value instead of a Supabase bearer token.
+[functions.github-oauth-start]
+verify_jwt = false
+
+[functions.github-oauth-callback]
+verify_jwt = false
+
+[functions.github-create-private-repo]
+verify_jwt = false
+
+[functions.github-sync-encrypted-records]
+verify_jwt = false
+
+[functions.github-set-record-trash]
+verify_jwt = false
+
+[functions.github-purge-expired]
+verify_jwt = false
+
+[functions.github-status]
+verify_jwt = false
+
+[functions.github-list-encrypted-records]
+verify_jwt = false

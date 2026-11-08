@@ -16,7 +16,7 @@ import { startRun, type LogLine, type RunControl, type RunMode } from "./runner"
 import { finishTask, getState, uid, updateTask, type Task } from "./session-store";
 import { TASKS, type TaskType } from "./tasks/definitions";
 
-export type RunPhase = "running" | "paused" | "done" | "error";
+export type RunPhase = "authorizing" | "running" | "paused" | "done" | "error";
 
 export interface LiveRun {
   taskId: string;
@@ -56,7 +56,11 @@ function subscribe(l: () => void) {
 
 const EMPTY: LiveRun[] = [];
 export function useLiveRuns(): LiveRun[] {
-  return useSyncExternalStore(subscribe, () => snapshot, () => EMPTY);
+  return useSyncExternalStore(
+    subscribe,
+    () => snapshot,
+    () => EMPTY,
+  );
 }
 
 export function useRun(taskId: string): LiveRun | undefined {
@@ -67,25 +71,47 @@ export function getRun(taskId: string): LiveRun | undefined {
   return runs.get(taskId);
 }
 
+function chargeRequestId(taskId: string): string | undefined {
+  if (typeof window === "undefined" || typeof crypto === "undefined" || !("randomUUID" in crypto))
+    return undefined;
+  const key = `gtr.credit-request.${taskId}`;
+  const existing = window.localStorage.getItem(key);
+  if (existing) return existing;
+  const id = crypto.randomUUID();
+  window.localStorage.setItem(key, id);
+  return id;
+}
+
+function clearChargeRequestId(taskId: string) {
+  if (typeof window !== "undefined") window.localStorage.removeItem(`gtr.credit-request.${taskId}`);
+}
+
 /** Starts the bot for a ready task. Safe to call twice (returns the existing run). */
 export function launchRun(task: Task): LiveRun {
   const existing = runs.get(task.id);
-  if (existing && (existing.phase === "running" || existing.phase === "paused")) return existing;
+  if (
+    existing &&
+    (existing.phase === "authorizing" ||
+      existing.phase === "running" ||
+      existing.phase === "paused")
+  )
+    return existing;
 
   const def = TASKS[task.type];
-  // Charge by task complexity; if the charge is refused, stop the run right away.
-  void chargeTask(task.type, taskUnits(task.type, task.data)).then(({ ok }) => {
-    if (ok) return;
+  const runId = uid();
+  const requestId = chargeRequestId(task.id);
+  const rejectRun = () => {
     const r = runs.get(task.id);
-    if (!r || (r.phase !== "running" && r.phase !== "paused")) return;
+    if (!r || r !== run) return;
     controls.get(task.id)?.cancel();
     controls.delete(task.id);
     runs.delete(task.id);
-    if (getState().tasks.some((t) => t.id === task.id)) updateTask(task.id, { lastRun: undefined, status: "ready" });
+    if (getState().tasks.some((t) => t.id === task.id))
+      updateTask(task.id, { lastRun: undefined, status: "ready" });
     emit();
     toast.error(tt("เครดิตไม่พอ งานถูกหยุด", "Not enough credits — the task was stopped"));
     openUpgrade();
-  });
+  };
   const config = getN8nConfig();
   const mode: RunMode = config.url ? "n8n" : "simulate";
   const startedAt = Date.now();
@@ -101,58 +127,87 @@ export function launchRun(task: Task): LiveRun {
     type: task.type,
     mode,
     target,
-    phase: "running",
+    phase: "authorizing",
     progress: initialProgress(def.pipeline.length),
     logs: [],
     startedAt,
     canPause: mode === "simulate",
   };
   runs.set(task.id, run);
-  updateTask(task.id, { lastRun: { status: "running", startedAt } });
   emit();
 
-  const control = startRun(
-    { id: task.id, type: task.type, data: task.data },
-    {
-      onLog: (line) => patch(task.id, (r) => ({ ...r, logs: [...r.logs, { ...line, id: r.logs.length + 1 }] })),
-      onProgress: (progress) => patch(task.id, (r) => ({ ...r, progress })),
-      onDone: () => {
-        const entry = finishTask(task.id, "success", startedAt, def.pipeline.length, { mode });
-        patch(task.id, (r) => ({ ...r, phase: "done", entryId: entry?.id }));
-        controls.delete(task.id);
-        const onScreen = typeof window !== "undefined" && window.location.pathname === `/execute/${task.id}`;
-        if (!onScreen) {
-          // Nobody is watching the execution screen: forget the run so it doesn't linger.
-          runs.delete(task.id);
-          emit();
-          toast.success(tt(`${def.title.th}สำเร็จ`, `${def.title.en} done`), { description: entry?.ref });
-        }
-      },
-      onError: ({ index, message }) => {
-        const label = tx(def.pipeline[index]);
-        updateTask(task.id, {
-          lastRun: { status: "failed", startedAt, failedStep: index, failedLabel: label, message },
-        });
-        const entry = finishTask(task.id, "failed", startedAt, index, { failedStep: index, mode });
-        patch(task.id, (r) => ({
-          ...r,
-          phase: "error",
-          entryId: entry?.id,
-          failure: { index, label, message },
-        }));
-        controls.delete(task.id);
-        toast.error(
-          tt(
-            `${def.title.th} ขัดข้องที่ขั้นตอน ${index + 1}/${def.pipeline.length}`,
-            `${def.title.en} failed at step ${index + 1}/${def.pipeline.length}`,
-          ),
-          { description: label },
-        );
-      },
-    },
-    { mode, config, runId: uid() },
-  );
-  controls.set(task.id, control);
+  // The server is the source of truth: do not execute a task before its charge succeeds.
+  void chargeTask(task.type, taskUnits(task.type, task.data), requestId)
+    .then(({ ok }) => {
+      if (!ok) return rejectRun();
+      clearChargeRequestId(task.id);
+      if (runs.get(task.id) !== run) return;
+      const authorizedAt = Date.now();
+      updateTask(task.id, { lastRun: { status: "running", startedAt: authorizedAt } });
+      patch(task.id, (r) => ({ ...r, phase: "running", startedAt: authorizedAt }));
+
+      const control = startRun(
+        { id: task.id, type: task.type, data: task.data },
+        {
+          onLog: (line) =>
+            patch(task.id, (r) => ({
+              ...r,
+              logs: [...r.logs, { ...line, id: r.logs.length + 1 }],
+            })),
+          onProgress: (progress) => patch(task.id, (r) => ({ ...r, progress })),
+          onDone: () => {
+            const entry = finishTask(task.id, "success", authorizedAt, def.pipeline.length, {
+              mode,
+            });
+            patch(task.id, (r) => ({ ...r, phase: "done", entryId: entry?.id }));
+            controls.delete(task.id);
+            const onScreen =
+              typeof window !== "undefined" && window.location.pathname === `/execute/${task.id}`;
+            if (!onScreen) {
+              // Nobody is watching the execution screen: forget the run so it doesn't linger.
+              runs.delete(task.id);
+              emit();
+              toast.success(tt(`${def.title.th}สำเร็จ`, `${def.title.en} done`), {
+                description: entry?.ref,
+              });
+            }
+          },
+          onError: ({ index, message }) => {
+            const label = tx(def.pipeline[index]);
+            updateTask(task.id, {
+              lastRun: {
+                status: "failed",
+                startedAt: authorizedAt,
+                failedStep: index,
+                failedLabel: label,
+                message,
+              },
+            });
+            const entry = finishTask(task.id, "failed", authorizedAt, index, {
+              failedStep: index,
+              mode,
+            });
+            patch(task.id, (r) => ({
+              ...r,
+              phase: "error",
+              entryId: entry?.id,
+              failure: { index, label, message },
+            }));
+            controls.delete(task.id);
+            toast.error(
+              tt(
+                `${def.title.th} ขัดข้องที่ขั้นตอน ${index + 1}/${def.pipeline.length}`,
+                `${def.title.en} failed at step ${index + 1}/${def.pipeline.length}`,
+              ),
+              { description: label },
+            );
+          },
+        },
+        { mode, config, runId },
+      );
+      controls.set(task.id, control);
+    })
+    .catch(rejectRun);
   return run;
 }
 
@@ -175,6 +230,7 @@ export function cancelRun(taskId: string) {
   const r = runs.get(taskId);
   controls.get(taskId)?.cancel();
   controls.delete(taskId);
+  if (r?.phase === "authorizing") return;
   if (r && (r.phase === "running" || r.phase === "paused")) {
     finishTask(taskId, "cancelled", r.startedAt, r.progress.completed, { mode: r.mode });
   }
