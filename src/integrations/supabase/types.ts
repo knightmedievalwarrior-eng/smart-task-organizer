@@ -14,6 +14,201 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_user_connections: {
+        Row: {
+          connection_key_ciphertext: string
+          connector_id: string
+          created_at: string
+          id: string
+          reconnect_required: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          connection_key_ciphertext: string
+          connector_id: string
+          created_at?: string
+          id?: string
+          reconnect_required?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          connection_key_ciphertext?: string
+          connector_id?: string
+          created_at?: string
+          id?: string
+          reconnect_required?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      credits_ledger: {
+        Row: {
+          bucket: string
+          created_at: string
+          credit_delta: number
+          entry_type: string
+          id: number
+          reference_id: string | null
+          request_id: string | null
+          task_kind: string | null
+          user_id: string
+        }
+        Insert: {
+          bucket: string
+          created_at?: string
+          credit_delta: number
+          entry_type: string
+          id?: never
+          reference_id?: string | null
+          request_id?: string | null
+          task_kind?: string | null
+          user_id: string
+        }
+        Update: {
+          bucket?: string
+          created_at?: string
+          credit_delta?: number
+          entry_type?: string
+          id?: never
+          reference_id?: string | null
+          request_id?: string | null
+          task_kind?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      github_backup_tombstones: {
+        Row: {
+          deleted_at: string
+          record_id: string
+          user_id: string
+        }
+        Insert: {
+          deleted_at?: string
+          record_id: string
+          user_id: string
+        }
+        Update: {
+          deleted_at?: string
+          record_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      github_vaults: {
+        Row: {
+          created_at: string
+          repository_default_branch: string
+          repository_full_name: string | null
+          repository_id: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          repository_default_branch?: string
+          repository_full_name?: string | null
+          repository_id?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          repository_default_branch?: string
+          repository_full_name?: string | null
+          repository_id?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      scheduled_jobs: {
+        Row: {
+          attempts: number
+          charged_at: string | null
+          completed_at: string | null
+          created_at: string
+          credits_charged: number
+          id: string
+          last_error: string | null
+          locked_at: string | null
+          scheduled_for: string
+          status: string
+          task_data: Json | null
+          task_id: string
+          task_type: string
+          updated_at: string
+          user_id: string
+          webhook_auth_header: string | null
+          webhook_auth_value_ciphertext: string | null
+          webhook_url: string
+        }
+        Insert: {
+          attempts?: number
+          charged_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          credits_charged?: number
+          id?: string
+          last_error?: string | null
+          locked_at?: string | null
+          scheduled_for: string
+          status?: string
+          task_data?: Json | null
+          task_id: string
+          task_type: string
+          updated_at?: string
+          user_id: string
+          webhook_auth_header?: string | null
+          webhook_auth_value_ciphertext?: string | null
+          webhook_url: string
+        }
+        Update: {
+          attempts?: number
+          charged_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          credits_charged?: number
+          id?: string
+          last_error?: string | null
+          locked_at?: string | null
+          scheduled_for?: string
+          status?: string
+          task_data?: Json | null
+          task_id?: string
+          task_type?: string
+          updated_at?: string
+          user_id?: string
+          webhook_auth_header?: string | null
+          webhook_auth_value_ciphertext?: string | null
+          webhook_url?: string
+        }
+        Relationships: []
+      }
+      trash_metadata: {
+        Row: {
+          deleted_at: string
+          expires_at: string
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          deleted_at?: string
+          expires_at?: string
+          task_id: string
+          user_id: string
+        }
+        Update: {
+          deleted_at?: string
+          expires_at?: string
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_profiles: {
         Row: {
           created_at: string
@@ -58,6 +253,55 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      charge_credits: {
+        Args: {
+          _kind: string
+          _request_id: string
+          _units: number
+          _user_id: string
+        }
+        Returns: {
+          cost: number
+          free: number
+          is_pro: boolean
+          monthly: number
+          pack: number
+          total: number
+        }[]
+      }
+      claim_scheduled_jobs: {
+        Args: { _limit?: number }
+        Returns: {
+          attempts: number
+          charged_at: string | null
+          completed_at: string | null
+          created_at: string
+          credits_charged: number
+          id: string
+          last_error: string | null
+          locked_at: string | null
+          scheduled_for: string
+          status: string
+          task_data: Json | null
+          task_id: string
+          task_type: string
+          updated_at: string
+          user_id: string
+          webhook_auth_header: string | null
+          webhook_auth_value_ciphertext: string | null
+          webhook_url: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "scheduled_jobs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      complete_scheduled_job: {
+        Args: { _error?: string; _job_id: string; _status: string }
+        Returns: undefined
+      }
       my_credits: {
         Args: never
         Returns: {
@@ -68,8 +312,31 @@ export type Database = {
           total: number
         }[]
       }
-      spend_credits: {
-        Args: { _kind: string; _units?: number }
+      spend_credits:
+        | {
+            Args: { _kind: string; _units?: number }
+            Returns: {
+              cost: number
+              free: number
+              is_pro: boolean
+              monthly: number
+              pack: number
+              total: number
+            }[]
+          }
+        | {
+            Args: { _kind: string; _request_id?: string; _units?: number }
+            Returns: {
+              cost: number
+              free: number
+              is_pro: boolean
+              monthly: number
+              pack: number
+              total: number
+            }[]
+          }
+      spend_scheduled_job_credits: {
+        Args: { _job_id: string }
         Returns: {
           cost: number
           free: number
