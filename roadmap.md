@@ -12,3 +12,9 @@
 - [x] GitHub backup / restore (user's own repo + token)
 - [x] Scheduled tasks (run while the app is open)
 - [x] Credits by task complexity (customer 1, quotation 2+, Excel/CSV 3+), stored in user_profiles
+- [ ] Complete passwordless email sign-in (Magic Link / OTP) and verify 250 daily credits on profile creation
+- [ ] Per-user GitHub OAuth through the backend, encrypted connection storage, and UUID JSON sync
+- [ ] Server-validated Excel/CSV workload and atomic, idempotent credit charging
+- [ ] Sync only scheduled tasks and trash metadata; run schedules and 30-day purge while the app is closed
+- [ ] Tighten RLS so browsers cannot forge execution or billing records
+- [ ] Verify backend rules and the main authenticated flows

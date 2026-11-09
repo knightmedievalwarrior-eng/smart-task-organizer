@@ -11,9 +11,9 @@
 
 # Architecture rules
 
-- All task/customer data lives client-side in `src/lib/session-store.ts` (localStorage, permanent, with a 30-day trash); the backend stores only accounts and credits (`user_profiles`) — privacy-first requirement.
-- Scheduled tasks run from `src/lib/scheduler.ts` only while the app is open, since data is local.
-- GitHub backup goes browser → user's repo via `src/lib/github-backup.ts`; the token stays in localStorage, never on our server.
+- Ordinary task/customer data lives client-side in `src/lib/session-store.ts` (localStorage, permanent, with a 30-day trash); only scheduled-task payloads/execution settings and trash metadata sync to the backend — privacy-first hybrid requirement.
+- Scheduled tasks use durable backend job records and a managed HTTP worker so they run while the app is closed; local scheduling remains only a UI aid.
+- GitHub access uses each signed-in user's own OAuth connection through the backend; provider tokens and connection keys never reach browser storage, and stored connection keys are encrypted.
 - Task types, steps, fields, validation and totals are declared in `src/lib/tasks/definitions.ts`; add new task types there so wizard, review and execution pick them up generically.
 - Command routing is local-first: `src/lib/intent.ts` decides command vs question; only questions go to `/api/chat` (streaming AI route in `src/server/ai/`).
 - Bot execution goes through `src/lib/runner.ts` (`startRun` callbacks); swap its internals for an n8n webhook/stream later without touching the UI.
